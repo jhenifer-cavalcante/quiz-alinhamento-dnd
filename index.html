@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#17151f">
+  <title>Quiz de Alinhamento | D&D</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #111018;
+      --panel: #1c1a27;
+      --panel2: #252235;
+      --text: #f5f0e6;
+      --muted: #b9b2c7;
+      --gold: #d7b56d;
+      --gold2: #f0d79b;
+      --line: #3a354b;
+      --accent: #8f79bd;
+      --good: #a8c99a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background:
+        radial-gradient(ellipse at top, rgba(111, 82, 145, .20), transparent 50%),
+        var(--bg);
+      color: var(--text);
+      font-family: Georgia, "Times New Roman", serif;
+      line-height: 1.55;
+    }
+    .wrap { width: min(900px, calc(100% - 28px)); margin: 0 auto; padding: 32px 0 56px; }
+    header { text-align: center; padding: 18px 12px 28px; }
+    .eyebrow { color: var(--gold); letter-spacing: .18em; text-transform: uppercase; font: 700 .76rem/1.4 system-ui, sans-serif; }
+    h1 { font-size: clamp(2rem, 6vw, 3.4rem); line-height: 1.08; margin: 12px 0; }
+    .subtitle { max-width: 650px; margin: 0 auto; color: var(--muted); font-size: 1.05rem; }
+    .intro, .question, .result { background: rgba(28, 26, 39, .94); border: 1px solid var(--line); border-radius: 16px; }
+    .intro { padding: 20px 22px; margin-bottom: 18px; }
+    .intro h2, .result h2 { margin-top: 0; color: var(--gold2); }
+    .alignment-key { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 16px; }
+    .key { border: 1px solid var(--line); border-radius: 12px; padding: 12px; background: var(--panel2); }
+    .key strong { color: var(--gold2); display: block; margin-bottom: 4px; }
+    .key span { font: .9rem/1.45 system-ui, sans-serif; color: var(--muted); }
+    .progress-wrap { position: sticky; top: 0; z-index: 2; background: rgba(17,16,24,.94); padding: 12px 2px; backdrop-filter: blur(8px); }
+    .progress-label { display: flex; justify-content: space-between; gap: 12px; font: .88rem system-ui, sans-serif; color: var(--muted); margin-bottom: 7px; }
+    .progress { height: 7px; border-radius: 99px; background: #302b3e; overflow: hidden; }
+    .progress > div { height: 100%; width: 0; background: linear-gradient(90deg, var(--accent), var(--gold)); transition: width .2s ease; }
+    .question { padding: 20px; margin: 14px 0; scroll-margin-top: 82px; }
+    .q-number { font: 700 .76rem system-ui, sans-serif; letter-spacing: .1em; color: var(--gold); text-transform: uppercase; }
+    .question h3 { margin: 6px 0 16px; font-size: 1.2rem; line-height: 1.4; }
+    .options { display: grid; gap: 9px; }
+    .option { display: flex; align-items: flex-start; gap: 12px; border: 1px solid var(--line); border-radius: 11px; padding: 12px 14px; cursor: pointer; background: #201e2c; transition: border-color .15s, background .15s; }
+    .option:hover { border-color: #8875af; background: #29253a; }
+    .option:has(input:checked) { border-color: var(--gold); background: #302a38; box-shadow: inset 0 0 0 1px rgba(215,181,109,.2); }
+    .option input { accent-color: var(--gold); margin-top: 5px; flex: 0 0 auto; }
+    .letter { color: var(--gold2); font-weight: bold; margin-right: 4px; }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 22px 0; }
+    button { font: 700 .98rem system-ui, sans-serif; border-radius: 10px; border: 1px solid var(--gold); padding: 13px 18px; cursor: pointer; }
+    .primary { color: #19151c; background: var(--gold); flex: 1 1 220px; }
+    .primary:hover { background: var(--gold2); }
+    .secondary { color: var(--text); background: transparent; border-color: var(--line); }
+    button:focus-visible, .option:focus-within { outline: 2px solid var(--gold2); outline-offset: 3px; }
+    .notice { color: var(--muted); font: .9rem/1.5 system-ui, sans-serif; }
+    .result { padding: 24px; margin-top: 24px; display: none; }
+    .result.show { display: block; }
+    .result-name { font-size: clamp(2rem, 7vw, 3rem); margin: 0 0 8px; color: var(--gold2); }
+    .score-row { margin: 14px 0; }
+    .score-title { display: flex; justify-content: space-between; font: .95rem system-ui, sans-serif; margin-bottom: 6px; }
+    .score-track { height: 10px; border-radius: 99px; background: #302b3e; overflow: hidden; }
+    .score-fill { height: 100%; width: 0; background: linear-gradient(90deg, var(--accent), var(--gold)); }
+    .tie-note { color: var(--good); }
+    footer { text-align: center; margin-top: 28px; color: var(--muted); font: .82rem/1.5 system-ui, sans-serif; }
+    @media (max-width: 600px) {
+      .alignment-key { grid-template-columns: 1fr; }
+      .wrap { width: min(100% - 20px, 900px); padding-top: 16px; }
+      .question { padding: 16px; }
+      .intro { padding: 17px; }
+    }
+    @media print {
+      body { background: white; color: black; }
+      .progress-wrap, .actions, .intro, .question { break-inside: avoid; }
+    }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <header>
+      <div class="eyebrow">Dungeons & Dragons · Teste de personagem</div>
+      <h1>Qual é o seu alinhamento ?</h1>
+      <p class="subtitle">15 dilemas para descobrir se seu personagem segue a ordem, busca o equilíbrio ou prefere a liberdade.</p>
+    </header>
+
+    <section class="intro" aria-labelledby="about-title">
+      <h2 id="about-title">O eixo da harmônia e da dissonância</h2>
+      <p>Responda pensando em como seu personagem <em>normalmente</em> agiria. Não existe resposta certa ou errada — escolha a alternativa que melhor representa seus princípios.</p>
+      <div class="alignment-key">
+        <div class="key"><strong>✦ Harmônico </strong><span>Valoriza códigos, compromissos, disciplina e estruturas.</span></div>
+        <div class="key"><strong>⚖ Equilibrado </strong><span>Avalia as circunstâncias e busca flexibilidade e equilíbrio.</span></div>
+        <div class="key"><strong>◇ Dissonante </strong><span>Prioriza autonomia, espontaneidade e liberdade individual.</span></div>
+      </div>
+      <p class="notice">Este teste avalia apenas o eixo Leal–Neutro–Caótico. Ele não determina se o personagem é Bom ou Mau.</p>
+    </section>
+
+    <div class="progress-wrap" aria-live="polite">
+      <div class="progress-label"><span>Progresso</span><span id="progressText">0 de 15 respondidas</span></div>
+      <div class="progress" role="progressbar" aria-label="Progresso do quiz" aria-valuemin="0" aria-valuemax="15" aria-valuenow="0" id="progressBar"><div id="progressFill"></div></div>
+    </div>
+
+    <form id="quizForm">
+      <div id="questions"></div>
+      <div class="actions">
+        <button type="submit" class="primary">Revelar meu alinhamento</button>
+        <button type="button" class="secondary" id="resetButton">Recomeçar</button>
+      </div>
+      <p class="notice" id="formNotice">Responda às 15 perguntas para ver o resultado final.</p>
+    </form>
+
+    <section class="result" id="result" aria-live="polite" aria-labelledby="resultHeading">
+      <div class="eyebrow">Resultado da sua jornada</div>
+      <h2 class="result-name" id="resultHeading">Equilibrado</h2>
+      <p id="resultDescription"></p>
+      <p id="tieNote" class="tie-note"></p>
+      <h3>Pontuação</h3>
+      <div id="scores"></div>
+      <div class="actions">
+        <button type="button" class="primary" id="retryButton">Refazer o quiz</button>
+        <button type="button" class="secondary" id="printButton">Imprimir resultado</button>
+      </div>
+    </section>
+
+    <footer>Um guia interpretativo para criação de personagens. Use o resultado como inspiração, não como regra absoluta.</footer>
+  </main>
+
+  <script>
+    const questions = [
+      {
+        q: "Você recebe uma missão de um nobre, mas percebe que as instruções são ineficientes. O que faz?",
+        a: [
+          ["L", "Segue as instruções, respeitando o acordo firmado."],
+          ["N", "Adapta o plano se isso trouxer resultados melhores."],
+          ["C", "Ignora as instruções e executa a missão do seu próprio jeito."]
+        ]
+      },
+      {
+        q: "Uma cidade proíbe o uso de magia em público. Como você reage?",
+        a: [
+          ["L", "Respeita a lei, mesmo que discorde dela."],
+          ["N", "Obedece quando faz sentido e avalia as exceções."],
+          ["C", "Considera a proibição uma restrição à liberdade e a desafia."]
+        ]
+      },
+      {
+        q: "Seu grupo precisa escolher um líder para uma expedição perigosa.",
+        a: [
+          ["L", "Escolhe alguém com autoridade reconhecida e um plano definido."],
+          ["N", "Escolhe a pessoa mais adequada para aquela missão."],
+          ["C", "Prefere que todos ajam livremente, sem um líder fixo."]
+        ]
+      },
+      {
+        q: "Você promete ajudar alguém, mas surge uma oportunidade inesperada.",
+        a: [
+          ["L", "Cumpre a promessa, pois sua palavra tem peso."],
+          ["N", "Avalia a importância de cada compromisso antes de decidir."],
+          ["C", "Segue a nova oportunidade se ela parecer mais interessante ou necessária."]
+        ]
+      },
+      {
+        q: "Como você lida com tradições antigas?",
+        a: [
+          ["L", "Preserva as tradições que mantêm a comunidade organizada."],
+          ["N", "Mantém as que funcionam e abandona as que perderam a utilidade."],
+          ["C", "Questiona as tradições e prefere criar novos caminhos."]
+        ]
+      },
+      {
+        q: "Um companheiro quebra uma regra do grupo por um bom motivo.",
+        a: [
+          ["L", "Defende que a regra deve ser respeitada, independentemente da intenção."],
+          ["N", "Considera o motivo e as consequências antes de julgar."],
+          ["C", "Acredita que regras não devem impedir alguém de fazer o que considera necessário."]
+        ]
+      },
+      {
+        q: "Você encontra um artefato antigo que pertence legalmente a uma ordem distante.",
+        a: [
+          ["L", "Procura devolver o artefato à ordem legítima."],
+          ["N", "Investiga a situação e decide com base nas circunstâncias."],
+          ["C", "Recusa-se a aceitar que uma instituição tenha autoridade automática sobre o artefato."]
+        ]
+      },
+      {
+        q: "Durante um combate, o plano combinado começa a dar errado.",
+        a: [
+          ["L", "Tenta manter a formação e recuperar o plano original."],
+          ["N", "Muda de estratégia conforme a situação exige."],
+          ["C", "Age por instinto e improvisa sem se prender ao plano."]
+        ]
+      },
+      {
+        q: "O que você pensa sobre juramentos?",
+        a: [
+          ["L", "São compromissos sérios que devem ser cumpridos."],
+          ["N", "São importantes, mas podem precisar ser reavaliados em circunstâncias extremas."],
+          ["C", "Não devem aprisionar alguém quando suas convicções mudam."]
+        ]
+      },
+      {
+        q: "Você precisa resolver uma disputa entre duas guildas.",
+        a: [
+          ["L", "Aplica as regras e os procedimentos estabelecidos."],
+          ["N", "Busca um acordo que considere as necessidades de ambas."],
+          ["C", "Questiona o sistema de disputa e propõe uma solução alternativa."]
+        ]
+      },
+      {
+        q: "Como você prefere organizar sua rotina de aventuras?",
+        a: [
+          ["L", "Com horários, funções e responsabilidades bem definidos."],
+          ["N", "Com planejamento básico e espaço para ajustes."],
+          ["C", "Sem uma rotina rígida, decidindo conforme as oportunidades aparecem."]
+        ]
+      },
+      {
+        q: "Uma autoridade competente dá uma ordem que você considera absurda.",
+        a: [
+          ["L", "Cumpre a ordem."],
+          ["N", "Avalia os riscos, a situação e as possíveis consequências antes de agir."],
+          ["C", "Recusa-se a obedecer apenas porque alguém tem autoridade."]
+        ]
+      },
+      {
+        q: "Você descobre que uma regra antiga protege a estabilidade, mas limita escolhas individuais.",
+        weight: 3,
+        a: [
+          ["L", "Prefere preservar a regra para manter a estabilidade coletiva."],
+          ["N", "Procura equilibrar a estabilidade com a liberdade individual."],
+          ["C", "Defende mudar a regra para ampliar a liberdade de escolha."]
+        ]
+      },
+      {
+        q: "Ao entrar em uma organização de aventureiros, o que mais importa para você?",
+        a: [
+          ["L", "Um código claro, hierarquia e responsabilidades definidas."],
+          ["N", "Objetivos comuns e flexibilidade para trabalhar de diferentes maneiras."],
+          ["C", "Autonomia para agir sem supervisão excessiva."]
+        ]
+      },
+      {
+        q: "No fim de uma aventura, como você avalia se tomou boas decisões?",
+        a: [
+          ["L", "Verifica se cumpriu seus deveres e respeitou seus princípios e compromissos."],
+          ["N", "Considera os resultados e se as decisões foram adequadas às circunstâncias."],
+          ["C", "Considera se agiu de acordo com sua própria vontade e convicção."]
+        ]
+      }
+    ];
+
+    const names = { L: "Harmônico", N: "Equilibrado", C: "Dissonante" };
+    const descriptions = {
+      L: "Seu personagem tende a seguir códigos, cumprir compromissos e valorizar estruturas estáveis. Ele pode discordar de uma regra, mas costuma levar deveres e princípios a sério.",
+      N: "Seu personagem tende a avaliar cada situação individualmente. Ele valoriza a flexibilidade, sem sentir necessidade de obedecer cegamente ou de desafiar regras por princípio.",
+      C: "Seu personagem tende a priorizar a autonomia, a espontaneidade e as próprias convicções. Ele questiona autoridades e prefere decidir como agir em vez de seguir estruturas rígidas."
+    };
+
+    const questionsContainer = document.getElementById("questions");
+    const form = document.getElementById("quizForm");
+    const result = document.getElementById("result");
+    const progressText = document.getElementById("progressText");
+    const progressFill = document.getElementById("progressFill");
+    const progressBar = document.getElementById("progressBar");
+    const formNotice = document.getElementById("formNotice");
+
+    function renderQuestions() {
+      questionsContainer.innerHTML = questions.map((question, i) => `
+        <section class="question" aria-labelledby="question-${i}">
+          <div class="q-number">Pergunta ${i + 1} de ${questions.length}</div>
+          <h3 id="question-${i}">${question.q}</h3>
+          <div class="options">
+            ${question.a.map((option, j) => `
+              <label class="option">
+                <input type="radio" name="q${i}" value="${option[0]}" required>
+                <span><span class="letter">${String.fromCharCode(65 + j)}.</span>${option[1]}</span>
+              </label>
+            `).join("")}
+          </div>
+        </section>
+      `).join("");
+    }
+
+    function updateProgress() {
+      const answered = questions.filter((_, i) => form.querySelector(`input[name="q${i}"]:checked`)).length;
+      progressText.textContent = `${answered} de ${questions.length} respondidas`;
+      progressFill.style.width = `${answered / questions.length * 100}%`;
+      progressBar.setAttribute("aria-valuenow", String(answered));
+      formNotice.textContent = answered === questions.length
+        ? "Todas as perguntas foram respondidas. Você já pode revelar o resultado."
+        : `Responda às ${questions.length} perguntas para ver o resultado final. Cada escolha vale 1 ponto.`;
+    }
+
+    function calculateResult() {
+      const scores = { L: 0, N: 0, C: 0 };
+      questions.forEach((_, i) => {
+        const selected = form.querySelector(`input[name="q${i}"]:checked`);
+        if (selected) {
+          const weight = questions[i].weight || 1;
+          scores[selected.value] += weight;
+        }
+      });
+      const highest = Math.max(scores.L, scores.N, scores.C);
+      const winners = Object.keys(scores).filter(key => scores[key] === highest);
+
+      document.getElementById("resultHeading").textContent = winners.map(key => names[key]).join(" / ");
+      document.getElementById("resultDescription").textContent = winners.length === 1
+        ? descriptions[winners[0]]
+        : "Seu personagem demonstra uma combinação de tendências. O empate sugere que seu alinhamento pode variar conforme o contexto ou que ele está entre dois estilos de comportamento.";
+      document.getElementById("tieNote").textContent = winners.length > 1
+        ? "Houve empate entre os alinhamentos indicados. Considere as respostas mais importantes para a personalidade do personagem."
+        : "";
+      document.getElementById("scores").innerHTML = Object.keys(scores).map(key => `
+        <div class="score-row">
+          <div class="score-title"><span>${names[key]}</span><strong>${scores[key]} ponto${scores[key] === 1 ? "" : "s"}</strong></div>
+          <div class="score-track"><div class="score-fill" style="width:${scores[key] / questions.reduce((sum, q) => sum + (q.weight || 1), 0) * 100}%"></div></div>
+        </div>
+      `).join("");
+      result.classList.add("show");
+      result.scrollIntoView({ behavior: "smooth", block: "start" });
+    }
+
+    form.addEventListener("change", updateProgress);
+    form.addEventListener("submit", event => {
+      event.preventDefault();
+      const firstUnanswered = questions.findIndex((_, i) => !form.querySelector(`input[name="q${i}"]:checked`));
+      if (firstUnanswered !== -1) {
+        formNotice.textContent = `Falta responder à pergunta ${firstUnanswered + 1}.`;
+        questionsContainer.children[firstUnanswered].scrollIntoView({ behavior: "smooth", block: "center" });
+        const firstRadio = questionsContainer.children[firstUnanswered].querySelector("input");
+        firstRadio.focus({ preventScroll: true });
+        return;
+      }
+      calculateResult();
+    });
+
+    function resetQuiz() {
+      form.reset();
+      result.classList.remove("show");
+      updateProgress();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    document.getElementById("resetButton").addEventListener("click", resetQuiz);
+    document.getElementById("retryButton").addEventListener("click", resetQuiz);
+    document.getElementById("printButton").addEventListener("click", () => window.print());
+
+    renderQuestions();
+    updateProgress();
+  </script>
+</body>
+</html>
